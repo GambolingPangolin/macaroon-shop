@@ -1,5 +1,5 @@
 module Authorize.Macaroon.Gen
-    ( macaroonGroup
+    ( sealedMacaroon
     , macaroon
     , location
     , caveat
@@ -9,19 +9,21 @@ module Authorize.Macaroon.Gen
     , validMacaroon
     ) where
 
-import           Data.ByteArray     (convert)
-import           Data.ByteString    (ByteString)
-import           Data.Set           (Set)
-import qualified Data.Set           as Set
-import           Hedgehog           (Gen)
-import qualified Hedgehog.Gen       as Gen
-import qualified Hedgehog.Range     as Range
+import           Data.ByteArray           (convert)
+import           Data.ByteString          (ByteString)
+import           Data.Set                 (Set)
+import qualified Data.Set                 as Set
+import           Hedgehog                 (Gen)
+import qualified Hedgehog.Gen             as Gen
+import qualified Hedgehog.Range           as Range
 
 import           Authorize.Macaroon
+import           Authorize.Macaroon.Types (Caveat (..), KeyId (..),
+                                           Macaroon (..), Signature (..))
 
 
-macaroonGroup :: Gen MacaroonGroup
-macaroonGroup = MacaroonGroup <$> macaroon <*> macaroons
+sealedMacaroon :: Gen SealedMacaroon
+sealedMacaroon = SealedMacaroon <$> macaroon <*> macaroons
     where
     macaroons = Gen.list (Range.constant 0 100) macaroon
 

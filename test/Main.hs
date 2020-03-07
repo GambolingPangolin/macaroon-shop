@@ -14,10 +14,10 @@ import           Hedgehog                  (Gen, Group (..), Property,
 import           Hedgehog.Main             (defaultMain)
 import qualified Hedgehog.Range            as Range
 
-import           Authorize.Macaroon        (MacaroonGroup (..),
+import           Authorize.Macaroon        (SealedMacaroon (..),
                                             addThirdPartyCaveat,
                                             createDischargeMacaroon,
-                                            prepareForRequest, verify)
+                                            sealMacaroon, verify)
 import           Authorize.Macaroon.Crypto (decryptKey, encryptKey)
 import qualified Authorize.Macaroon.Gen    as G
 import qualified Hedgehog.Gen              as Gen
@@ -34,7 +34,7 @@ testSerialization :: Group
 testSerialization = Group "Serialization"
     [ ("Caveat", testCaveatSerialization)
     , ("Macaroon", testMacaroonSerialization)
-    , ("MacaroonGroup", testMacaroonGroupSerialization)
+    , ("SealedMacaroon", testSealedMacaroonSerialization)
     ]
 
 
@@ -46,8 +46,8 @@ testMacaroonSerialization :: Property
 testMacaroonSerialization = roundTripProperty 500 G.macaroon
 
 
-testMacaroonGroupSerialization :: Property
-testMacaroonGroupSerialization = roundTripProperty 20 G.macaroonGroup
+testSealedMacaroonSerialization :: Property
+testSealedMacaroonSerialization = roundTripProperty 20 G.sealedMacaroon
 
 
 roundTripProperty :: (Eq a, Show a, Serialize a) => TestLimit -> Gen a -> Property
@@ -83,13 +83,13 @@ testValidation = Group "Validation"
 testPasses :: Property
 testPasses = withTests 100 . property $ do
     (k, m, cs) <- forAll G.validMacaroon
-    verify k (MacaroonGroup m []) === Right cs
+    verify k (SealedMacaroon m []) === Right cs
 
 
 testComplexPasses :: Property
 testComplexPasses = withTests 100 . property $ do
     (k, m, cs) <- forAll G.validMacaroon
-    mg <- fmap (uncurry prepareForRequest) . foldM step (m, []) =<< forAll genTPData
+    mg <- fmap (uncurry sealMacaroon) . foldM step (m, []) =<< forAll genTPData
     verify k mg === Right cs
 
     where

@@ -6,7 +6,7 @@ module Authorize.Macaroon.Types
     , Macaroon (..)
     , Caveat (..)
 
-    , MacaroonGroup (..)
+    , SealedMacaroon (..)
 
     , Key (..)
     , KeyId (..)
@@ -56,8 +56,7 @@ data Macaroon = Macaroon
     , identifier        :: MacaroonId
     , caveats           :: [Caveat]
     , macaroonSignature :: Signature
-    }
-    deriving (Eq, Show)
+    } deriving (Eq, Show)
 
 
 instance Serialize Macaroon where
@@ -103,8 +102,7 @@ data Caveat = Caveat
     -- ^ First party caveats do not require a key ident
     , caveatContent      :: ByteString
     -- ^ content semantics are determined in the application layer
-    }
-    deriving (Eq, Show)
+    } deriving (Eq, Show)
 
 
 instance Serialize Caveat where
@@ -126,16 +124,15 @@ instance Serialize Caveat where
 -- | Couple a macaroon with its discharges.  Application developers should
 -- only produce these values either by invoking @prepareForRequest@ or by
 -- deserializing a client token.
-data MacaroonGroup = MacaroonGroup
+data SealedMacaroon = SealedMacaroon
     { rootMacaroon       :: Macaroon
     , dischargeMacaroons :: [Macaroon]
-    }
-    deriving (Eq, Show)
+    } deriving (Eq, Show)
 
 
-instance Serialize MacaroonGroup where
-    put (MacaroonGroup r ds) = put r >> mapM_ put ds
-    get = MacaroonGroup <$> get <*> getMacaroons
+instance Serialize SealedMacaroon where
+    put (SealedMacaroon r ds) = put r >> mapM_ put ds
+    get = SealedMacaroon <$> get <*> getMacaroons
         where
         getMacaroons = do
             n <- S.remaining

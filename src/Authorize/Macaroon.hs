@@ -14,7 +14,7 @@ module Authorize.Macaroon
 
       MacaroonId (..)
     , Macaroon
-    , MacaroonGroup (..)
+    , SealedMacaroon (..)
 
     , Key (..)
     , Location
@@ -24,7 +24,7 @@ module Authorize.Macaroon
     , createMacaroon
     , addFirstPartyCaveat
     , addThirdPartyCaveat
-    , prepareForRequest
+    , sealMacaroon
 
     , createDischargeMacaroon
 
@@ -99,9 +99,14 @@ createDischargeMacaroon k l c = createMacaroon k (MacaroonId c) l
 
 
 -- | In order to secure discharge macaroons, they must be bound to the root macaroon before transmission.
-prepareForRequest :: Macaroon -> [Macaroon] -> MacaroonGroup
-prepareForRequest m@Macaroon{ macaroonSignature = s } ms
-    = MacaroonGroup m $ bindMacaroon <$> ms
+sealMacaroon
+    :: Macaroon
+    -- ^ root macaroon
+    -> [Macaroon]
+    -- ^ discharge macaroons
+    -> SealedMacaroon
+sealMacaroon m@Macaroon{ macaroonSignature = s } ms
+    = SealedMacaroon m $ bindMacaroon <$> ms
     where
     bindMacaroon m'@Macaroon{ macaroonSignature = s' }
         = m' { macaroonSignature = bindForRequest s s' }

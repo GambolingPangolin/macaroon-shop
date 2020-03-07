@@ -18,7 +18,8 @@ import           Authorize.Macaroon.Crypto
 import           Authorize.Macaroon.Types
 
 
-data VerificationFailure = InvalidSignature MacaroonId
+data VerificationFailure
+    = InvalidSignature MacaroonId
     | InvalidBinding MacaroonId
     | MissingDischargeMacaroon MacaroonId
     | ExcessDischarges [Macaroon]
@@ -34,9 +35,9 @@ type Discharges = Map MacaroonId Macaroon
 verify
     :: Key
     -- ^ root key
-    -> MacaroonGroup
+    -> SealedMacaroon
     -> Either VerificationFailure (Set ByteString)
-verify rootKey (MacaroonGroup m ms) = do
+verify rootKey (SealedMacaroon m ms) = do
     (cs, ds') <- verify' (deriveKey rootKey) m ds
     unless (Map.null ds') $ Left (ExcessDischarges $ Map.elems ds')
     return cs
