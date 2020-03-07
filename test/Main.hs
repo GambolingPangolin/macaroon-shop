@@ -9,12 +9,14 @@ import           Data.Serialize            (Serialize)
 import qualified Data.Serialize            as S
 import qualified Data.Set                  as Set
 import           Hedgehog                  (Gen, Group (..), Property,
-                                            TestLimit, checkParallel, diff,
-                                            forAll, property, withTests, (===))
+                                            PropertyT, TestLimit, assert,
+                                            checkParallel, diff, forAll,
+                                            property, withTests, (===))
 import           Hedgehog.Main             (defaultMain)
 import qualified Hedgehog.Range            as Range
 
-import           Authorize.Macaroon        (SealedMacaroon (..),
+import           Authorize.Macaroon        (Macaroon, SealedMacaroon (..),
+                                            VerificationFailure (..),
                                             addThirdPartyCaveat,
                                             createDischargeMacaroon,
                                             sealMacaroon, verify)
@@ -26,15 +28,15 @@ import qualified Hedgehog.Gen              as Gen
 main :: IO ()
 main = defaultMain [ checkParallel testSerialization
                    , checkParallel testCrypto
-                   , checkParallel testValidation
+                   , checkParallel testVerification
                    ]
 
 
 testSerialization :: Group
 testSerialization = Group "Serialization"
-    [ ("Caveat", testCaveatSerialization)
-    , ("Macaroon", testMacaroonSerialization)
-    , ("SealedMacaroon", testSealedMacaroonSerialization)
+    [ ("Caveat"         , testCaveatSerialization)
+    , ("Macaroon"       , testMacaroonSerialization)
+    , ("SealedMacaroon" , testSealedMacaroonSerialization)
     ]
 
 
@@ -73,10 +75,13 @@ testKeyEncryption = withTests 10 . property $ do
     decryptKey s ct === Just x
 
 
-testValidation :: Group
-testValidation = Group "Validation"
-    [ ("Passes (simple)", testPasses)
-    , ("Passes (complex)", testComplexPasses)
+testVerification :: Group
+testVerification = Group "Verification"
+    [ ("Passes (simple)"           , testPasses)
+    , ("Passes (complex)"          , testComplexPasses)
+    , ("Fails (missing discharge)" , testMissingDischarge)
+    , ("Fails (invalid key)"       , testInvalidKey)
+    , ("Fails (invalid binding)"   , testInvalidBinding)
     ]
 
 
@@ -89,15 +94,49 @@ testPasses = withTests 100 . property $ do
 testComplexPasses :: Property
 testComplexPasses = withTests 100 . property $ do
     (k, m, cs) <- forAll G.validMacaroon
-    mg <- fmap (uncurry sealMacaroon) . foldM step (m, []) =<< forAll genTPData
-    verify k mg === Right cs
+    sm         <- uncurry sealMacaroon <$> addThirdPartyCaveats m
+    verify k sm === Right cs
 
+
+addThirdPartyCaveats :: Macaroon -> PropertyT IO (Macaroon, [Macaroon])
+addThirdPartyCaveats m0
+    = forAll genThirdPartyCaveats >>= foldM step (m0, [])
     where
-    tpCaveats       = Gen.set (Range.constant 1 10) G.content
-    genTPData       = tpCaveats >>= traverse inflateTPData . Set.toList
+    genThirdPartyCaveats
+        = Gen.set (Range.constant 1 10) G.content >>= traverse inflateTPData . Set.toList
     inflateTPData c = (, , c) <$> G.key <*> G.location
 
     step (m, ds) (ck, l, c) = do
         m' <- liftIO $ addThirdPartyCaveat m ck l c
         let d = createDischargeMacaroon ck l c []
         return (m', ds <> [d])
+
+
+testMissingDischarge :: Property
+testMissingDischarge = withTests 100 . property $ do
+    (k, m, _) <- forAll G.validMacaroon
+    (m', _)   <- addThirdPartyCaveats m
+    assert . isMissingDischarge $ verify k (SealedMacaroon m' [])
+    where
+    isMissingDischarge (Left (MissingDischargeMacaroon _)) = True
+    isMissingDischarge _                                   = False
+
+
+testInvalidKey :: Property
+testInvalidKey = withTests 100 . property $ do
+    k         <- forAll G.key
+    (_, m, _) <- forAll G.validMacaroon
+    assert . isInvalidSignature $ verify k (SealedMacaroon m [])
+    where
+    isInvalidSignature (Left (InvalidSignature _)) = True
+    isInvalidSignature _                           = False
+
+
+testInvalidBinding :: Property
+testInvalidBinding = withTests 100 . property $ do
+    (k, m, _) <- forAll G.validMacaroon
+    sm        <- uncurry SealedMacaroon <$> addThirdPartyCaveats m
+    assert . isInvalidBinding $ verify k sm
+    where
+    isInvalidBinding (Left (InvalidBinding _)) = True
+    isInvalidBinding _                         = False
