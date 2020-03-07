@@ -24,6 +24,7 @@ module Authorize.Macaroon
     , createMacaroon
     , addFirstPartyCaveat
     , addThirdPartyCaveat
+    , extractThirdPartyCaveats
     , sealMacaroon
 
     , createDischargeMacaroon
@@ -34,6 +35,7 @@ module Authorize.Macaroon
 
 import           Data.ByteString           (ByteString)
 import           Data.List                 (foldl')
+import           Data.Maybe                (isJust)
 
 import           Authorize.Macaroon.Crypto
 import           Authorize.Macaroon.Types
@@ -82,6 +84,15 @@ addCaveat m c@Caveat{ caveatKeyId = k, caveatContent = cc }
     = m { caveats           = caveats m <> [c]
         , macaroonSignature = updateSignature (macaroonSignature m) k cc
         }
+
+
+-- | Get the third party caveats encoded in the macaroon
+extractThirdPartyCaveats :: Macaroon -> [ByteString]
+extractThirdPartyCaveats = fmap caveatContent . filter isThirdParty . caveats
+
+
+isThirdParty :: Caveat -> Bool
+isThirdParty = isJust . caveatKeyId
 
 
 -- | Mint a macaroon discharging a third party caveat
