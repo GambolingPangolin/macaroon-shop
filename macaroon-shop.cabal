@@ -4,10 +4,9 @@ version:            0.1.0.0
 synopsis:           A toolkit for working with macaroons
 license:            BSD-3-Clause
 license-file:       LICENSE
-copyright:          Bitnomial, Inc. (c) 2020
 author:             Ian Shipman
 maintainer:         ics@gambolingpangolin.com
-homepage:           https://github.com/bitnomial/macaroon-shop
+homepage:           https://github.com/GambolingPangolin/macaroon-shop
 extra-source-files: CHANGELOG.md
 
 
