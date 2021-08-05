@@ -14,7 +14,6 @@ import           Crypto.MAC.HMAC                   (HMAC, hmac)
 import qualified Crypto.Saltine.Class              as Nacl
 import           Crypto.Saltine.Core.SecretBox     (newNonce, secretbox,
                                                     secretboxOpen)
-import qualified Crypto.Saltine.Internal.ByteSizes as Sizes
 import           Data.ByteArray                    (ByteArray, ByteArrayAccess,
                                                     convert)
 import           Data.ByteString                   (ByteString)
@@ -23,6 +22,7 @@ import qualified Data.ByteString                   as BS
 import           Authorize.Macaroon.Types          (Key (..), KeyId (..),
                                                     MacaroonId (..),
                                                     Signature (..))
+import           Crypto.Saltine.Internal.SecretBox (secretbox_noncebytes)
 
 
 createSignature :: Key -> MacaroonId -> Signature
@@ -48,7 +48,7 @@ decryptKey (Signature s) (KeyId kid) = do
     key <- Nacl.decode s
     Key . convert <$> secretboxOpen key n ct
     where
-    (nonceBytes, ct) = BS.splitAt Sizes.secretBoxNonce kid
+    (nonceBytes, ct) = BS.splitAt secretbox_noncebytes kid
 
 
 bindForRequest :: Signature -> Signature -> Signature

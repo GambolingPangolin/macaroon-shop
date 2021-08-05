@@ -12,10 +12,10 @@ module Authorize.Macaroon.Serialize
     , atEOS
     ) where
 
-import qualified Data.Bytes.Serial as By
-import           Data.Bytes.VarInt (VarInt (..))
 import           Data.ByteString   (ByteString)
 import qualified Data.ByteString   as BS
+import qualified Data.Bytes.Serial as By
+import           Data.Bytes.VarInt (VarInt (..))
 import           Data.Serialize    (Get, Put, Serialize (..))
 import qualified Data.Serialize    as S
 import           Data.Word         (Word8)

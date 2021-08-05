@@ -1,47 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
-module Main where
+module Main (main) where
 
-import           Control.Monad             (foldM)
-import           Control.Monad.IO.Class    (liftIO)
-import           Data.Serialize            (Serialize)
-import qualified Data.Serialize            as S
-import qualified Data.Set                  as Set
-import           Hedgehog                  (Gen, Group (..), Property,
-                                            PropertyT, TestLimit, assert,
-                                            checkParallel, diff, forAll,
-                                            property, withTests, (===))
-import           Hedgehog.Main             (defaultMain)
-import qualified Hedgehog.Range            as Range
+import           Control.Monad          (foldM)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Serialize         (Serialize)
+import qualified Data.Serialize         as S
+import qualified Data.Set               as Set
+import           Hedgehog               (Gen, Group (..), Property, PropertyT,
+                                         TestLimit, assert, checkParallel, diff,
+                                         forAll, property, withTests, (===))
+import           Hedgehog.Main          (defaultMain)
+import qualified Hedgehog.Range         as Range
 
-import           Authorize.Macaroon        (Macaroon, SealedMacaroon (..),
-                                            VerificationFailure (..),
-                                            addThirdPartyCaveat,
-                                            createDischargeMacaroon,
-                                            sealMacaroon, verify)
-import           Authorize.Macaroon.Crypto (decryptKey, encryptKey)
-import qualified Authorize.Macaroon.Gen    as G
-import qualified Hedgehog.Gen              as Gen
+import           Authorize.Macaroon     (Macaroon, SealedMacaroon (..),
+                                         VerificationFailure (..),
+                                         addThirdPartyCaveat,
+                                         createDischargeMacaroon, sealMacaroon,
+                                         verify)
+import qualified Authorize.Macaroon.Gen as G
+import qualified Hedgehog.Gen           as Gen
 
 
 main :: IO ()
 main = defaultMain [ checkParallel testSerialization
-                   , checkParallel testCrypto
                    , checkParallel testVerification
                    ]
 
 
 testSerialization :: Group
 testSerialization = Group "Serialization"
-    [ ("Caveat"         , testCaveatSerialization)
-    , ("Macaroon"       , testMacaroonSerialization)
+    [ ("Macaroon"       , testMacaroonSerialization)
     , ("SealedMacaroon" , testSealedMacaroonSerialization)
     ]
-
-
-testCaveatSerialization :: Property
-testCaveatSerialization = roundTripProperty 1000 G.caveat
 
 
 testMacaroonSerialization :: Property
@@ -62,17 +54,8 @@ roundTrip :: Serialize a => a -> Either String a
 roundTrip = S.decode . S.encode
 
 
-testCrypto :: Group
-testCrypto = Group "Cryptography"
-    [ ("Key encryption", testKeyEncryption) ]
 
 
-testKeyEncryption :: Property
-testKeyEncryption = withTests 10 . property $ do
-    x  <- forAll G.key
-    s  <- forAll G.signature
-    ct <- liftIO $ encryptKey s x
-    decryptKey s ct === Just x
 
 
 testVerification :: Group
