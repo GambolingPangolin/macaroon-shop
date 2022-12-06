@@ -27,13 +27,28 @@ module Authorize.Macaroon (
     VerificationFailure (..),
 ) where
 
+import Authorize.Macaroon.Crypto (
+    bindForRequest,
+    createSignature,
+    deriveKey,
+    encryptKey,
+    updateSignature,
+ )
+import Authorize.Macaroon.Types (
+    Caveat (Caveat, caveatContent, caveatKeyId),
+    Key (..),
+    Location,
+    Macaroon (Macaroon, caveats, macaroonSignature),
+    MacaroonId (..),
+    SealedMacaroon (..),
+ )
+import Authorize.Macaroon.Verify (
+    VerificationFailure (..),
+    verify,
+ )
 import Data.ByteString (ByteString)
 import Data.List (foldl')
 import Data.Maybe (isJust)
-
-import Authorize.Macaroon.Crypto
-import Authorize.Macaroon.Types
-import Authorize.Macaroon.Verify
 
 -- | Mint a macaroon
 createMacaroon ::

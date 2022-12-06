@@ -9,29 +9,28 @@ module Authorize.Macaroon.Crypto (
     deriveKey,
 ) where
 
-import Crypto.Hash (SHA256)
-import Crypto.MAC.HMAC (HMAC, hmac)
-import qualified Crypto.Saltine.Class as Nacl
-import Crypto.Saltine.Core.SecretBox (
-    newNonce,
-    secretbox,
-    secretboxOpen,
- )
-import Data.ByteArray (
-    ByteArray,
-    ByteArrayAccess,
-    convert,
- )
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-
 import Authorize.Macaroon.Types (
     Key (..),
     KeyId (..),
     MacaroonId (..),
     Signature (..),
  )
+import Crypto.Hash (SHA256)
+import Crypto.MAC.HMAC (HMAC, hmac)
+import Crypto.Saltine.Class qualified as Nacl
+import Crypto.Saltine.Core.SecretBox (
+    newNonce,
+    secretbox,
+    secretboxOpen,
+ )
 import Crypto.Saltine.Internal.SecretBox (secretbox_noncebytes)
+import Data.ByteArray (
+    ByteArray,
+    ByteArrayAccess,
+    convert,
+ )
+import Data.ByteString (ByteString)
+import Data.ByteString qualified as BS
 
 createSignature :: Key -> MacaroonId -> Signature
 createSignature k m = Signature $ keyedHash k m

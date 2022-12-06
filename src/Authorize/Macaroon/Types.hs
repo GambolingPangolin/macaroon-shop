@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Authorize.Macaroon.Types (
@@ -12,6 +11,7 @@ module Authorize.Macaroon.Types (
     Location,
 ) where
 
+import Authorize.Macaroon.Serialize qualified as MS
 import Control.Monad (unless)
 import Data.ByteArray (
     ByteArray,
@@ -19,12 +19,10 @@ import Data.ByteArray (
     ScrubbedBytes,
  )
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
+import Data.ByteString qualified as BS
 import Data.Maybe (fromMaybe)
 import Data.Serialize (Serialize (..))
-import qualified Data.Serialize as S
-
-import Authorize.Macaroon.Serialize
+import Data.Serialize qualified as S
 
 type Location = ByteString
 
@@ -58,26 +56,26 @@ data Macaroon = Macaroon
 instance Serialize Macaroon where
     put (Macaroon loc i cs sig) = do
         S.putWord8 2 -- version byte
-        unless (BS.null loc) $ putField fieldLocation loc
-        putField fieldIdentifier $ unMacaroonId i
-        put fieldEOS
+        unless (BS.null loc) $ MS.putField MS.fieldLocation loc
+        MS.putField MS.fieldIdentifier $ unMacaroonId i
+        put MS.fieldEOS
 
         mapM_ put cs
-        put fieldEOS
+        put MS.fieldEOS
 
-        putField fieldSignature $ unSignature sig
+        MS.putField MS.fieldSignature $ unSignature sig
 
     get = do
         getVersion
 
-        mloc <- getOptionalField fieldLocation
-        mid <- MacaroonId <$> getField fieldIdentifier
-        getEOS
+        mloc <- MS.getOptionalField MS.fieldLocation
+        mid <- MacaroonId <$> MS.getField MS.fieldIdentifier
+        MS.getEOS
 
         cs <- getCaveats
-        getEOS
+        MS.getEOS
 
-        sig <- Signature <$> getField fieldSignature
+        sig <- Signature <$> MS.getField MS.fieldSignature
         return $ Macaroon (fromMaybe mempty mloc) mid cs sig
       where
         getVersion = do
@@ -85,7 +83,7 @@ instance Serialize Macaroon where
             if v == 2 then return () else fail "Unsupported macaroon version"
 
         getCaveats = do
-            eos <- atEOS
+            eos <- MS.atEOS
             if eos then return [] else (:) <$> get <*> getCaveats
 
 data Caveat = Caveat
@@ -100,17 +98,17 @@ data Caveat = Caveat
 
 instance Serialize Caveat where
     put (Caveat loc mk c) = do
-        unless (BS.null loc) $ putField fieldLocation loc
-        putField fieldIdentifier c
-        mapM_ (putField fieldVerificationId . unKeyId) mk
-        put fieldEOS
+        unless (BS.null loc) $ MS.putField MS.fieldLocation loc
+        MS.putField MS.fieldIdentifier c
+        mapM_ (MS.putField MS.fieldVerificationId . unKeyId) mk
+        put MS.fieldEOS
 
     get =
         makeCaveat
-            <$> getOptionalField fieldLocation
-            <*> getField fieldIdentifier
-            <*> getOptionalField fieldVerificationId
-            <* getEOS
+            <$> MS.getOptionalField MS.fieldLocation
+            <*> MS.getField MS.fieldIdentifier
+            <*> MS.getOptionalField MS.fieldVerificationId
+            <* MS.getEOS
       where
         makeCaveat mloc c mkeyid = Caveat (fromMaybe mempty mloc) (KeyId <$> mkeyid) c
 

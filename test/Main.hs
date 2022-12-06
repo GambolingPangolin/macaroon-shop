@@ -3,11 +3,21 @@
 
 module Main (main) where
 
+import Authorize.Macaroon (
+    Macaroon,
+    SealedMacaroon (..),
+    VerificationFailure (..),
+    addThirdPartyCaveat,
+    createDischargeMacaroon,
+    sealMacaroon,
+    verify,
+ )
+import Authorize.Macaroon.Gen qualified as G
 import Control.Monad (foldM)
 import Control.Monad.IO.Class (liftIO)
 import Data.Serialize (Serialize)
-import qualified Data.Serialize as S
-import qualified Data.Set as Set
+import Data.Serialize qualified as S
+import Data.Set qualified as Set
 import Hedgehog (
     Gen,
     Group (..),
@@ -22,20 +32,9 @@ import Hedgehog (
     withTests,
     (===),
  )
+import Hedgehog.Gen qualified as Gen
 import Hedgehog.Main (defaultMain)
-import qualified Hedgehog.Range as Range
-
-import Authorize.Macaroon (
-    Macaroon,
-    SealedMacaroon (..),
-    VerificationFailure (..),
-    addThirdPartyCaveat,
-    createDischargeMacaroon,
-    sealMacaroon,
-    verify,
- )
-import qualified Authorize.Macaroon.Gen as G
-import qualified Hedgehog.Gen as Gen
+import Hedgehog.Range qualified as Range
 
 main :: IO ()
 main =

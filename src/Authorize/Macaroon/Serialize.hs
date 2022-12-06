@@ -12,11 +12,11 @@ module Authorize.Macaroon.Serialize (
 ) where
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import qualified Data.Bytes.Serial as By
+import Data.ByteString qualified as BS
+import Data.Bytes.Serial qualified as By
 import Data.Bytes.VarInt (VarInt (..))
 import Data.Serialize (Get, Put, Serialize (..))
-import qualified Data.Serialize as S
+import Data.Serialize qualified as S
 import Data.Word (Word8)
 
 fieldEOS :: Word8

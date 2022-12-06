@@ -4,18 +4,31 @@ module Authorize.Macaroon.Verify (
     recalcSignature,
 ) where
 
+import Authorize.Macaroon.Crypto (
+    bindForRequest,
+    createSignature,
+    decryptKey,
+    deriveKey,
+    updateSignature,
+ )
+import Authorize.Macaroon.Types (
+    Caveat (Caveat),
+    Key,
+    KeyId,
+    Macaroon (..),
+    MacaroonId (MacaroonId),
+    SealedMacaroon (SealedMacaroon),
+    Signature,
+ )
 import Control.Arrow ((&&&))
 import Control.Monad (foldM, unless)
 import Data.ByteArray (constEq)
 import Data.ByteString (ByteString)
 import Data.Foldable (foldl')
 import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import Data.Set (Set)
-import qualified Data.Set as Set
-
-import Authorize.Macaroon.Crypto
-import Authorize.Macaroon.Types
+import Data.Set qualified as Set
 
 data VerificationFailure
     = InvalidSignature MacaroonId
