@@ -1,0 +1,7 @@
+cradle:
+  cabal:
+    - path: "./src/"
+      component: "lib:macaroon-shop"
+
+    - path: "./test/"
+      component: "macaroon-shop:test:macaroon-shop-tests"
